@@ -22,7 +22,7 @@ Mandelbrot::Mandelbrot(QWidget *parent)
     mandelOriginY = 0.0;
     mandelPixelOffset = 0.0035;
 
-    maxIterations = 1000;
+    maxIterations = 10000;
 
     connect(this, SIGNAL(signalZoom()), this, SLOT(slotZoom()));
     connect(this, SIGNAL(signalResize()), this, SLOT(slotResize()));
@@ -64,7 +64,7 @@ QColor Mandelbrot::calculateIterationColor(int i){
 
     if(i == maxIterations){return QColor(0, 0, 0);}
     int val = (i*6) % 256;
-    return QColor(val, 0, val);
+    return QColor(0, val, val);
 }
 
 QColor Mandelbrot::calculateMandelPointColor(long double a, long double b){

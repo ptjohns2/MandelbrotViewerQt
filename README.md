@@ -1,6 +1,7 @@
-#MandelBrotViewerQt   
+#MandelbrotViewerQt   
    
-##Mandelbrot viewer with a minimalist UI and controls.  Implemented as a Qt QWidget so you can include it in your own projects.   
+##Mandelbrot viewer with a minimalist UI and controls.  
+###Implemented as a Qt QWidget so you can include it in your own projects.   
  - Left click = zoom in   
  - Right click = zoom out 
    
