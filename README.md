@@ -13,4 +13,4 @@ TODO:
  - Color customization       
    
    
-![Screenshot](/demos/miniMandel1.png?raw=true)
+![Screenshot](/demos/miniMandel1_small.png?raw=true)
