@@ -2,156 +2,184 @@
 
 #include <QBrush>
 
-#define PROGRAM_NAME    "MandelbrotLight"
-
 
 Mandelbrot::Mandelbrot(QWidget *parent)
     :   QWidget(parent)
 {
-    latestQMouseEvent = NULL;
+    initPointers();
+    init();
 
-    viewWidth = viewHeight = 400;
-    this->resize(viewWidth, viewHeight);
-    recalculateViewParameters();
-
-    pixmap = new QPixmap(viewWidth, viewHeight);
-    pixMapIsValid = false;
-
-
-    mandelOriginX = -0.75;
-    mandelOriginY = 0.0;
-    mandelPixelOffset = 0.0035;
-
-    maxIterations = 10000;
-
-    connect(this, SIGNAL(signalZoom()), this, SLOT(slotZoom()));
-    connect(this, SIGNAL(signalResize()), this, SLOT(slotResize()));
+    connect(this, SIGNAL(signalZoom()), this, SLOT(slotZoomEvent()));
+    //connect(this, SIGNAL(signalResize()), this, SLOT(slotResizeEvent()));
 
 }
+uint Mandelbrot::maxIterations = DEFAULT_MAX_ITERATIONS;
+precisionFloat Mandelbrot::zoomMultiplier = DEFAULT_ZOOM_MULTIPLIER;
+void Mandelbrot::initPointers(){
+    pixmap = NULL;
+}
+
+void Mandelbrot::init(){
+    this->iterationValuesAreValid = false;
+
+    setViewParameters(DEFAULT_VIEW_WIDTH, DEFAULT_VIEW_HEIGHT);
+    this->resize(viewParameters.width, viewParameters.height);
+    setMandelLocation(MandelLocation(MandelPoint(DEFAULT_MANDEL_ORIGIN_X, DEFAULT_MANDEL_ORIGIN_Y), DEFAULT_MANDEL_PIXEL_DELTA));
+    setMaxIterations(DEFAULT_MAX_ITERATIONS);
+    setZoomMultiplier(DEFAULT_ZOOM_MULTIPLIER);
+}
+
 Mandelbrot::~Mandelbrot(){
+    deinit();
+}
+void Mandelbrot::deinit(){
     delete pixmap;
+    pixmap = NULL;
 }
 
 
-int Mandelbrot::calculateNumMandelbrotEscapeIterations(long double x0, long double y0){
-    long double x = 0.0;
-    long double y = 0.0;
+void Mandelbrot::setViewParameters(uint viewWidth, uint viewHeight){
+    viewParameters.width = viewWidth;
+    viewParameters.height = viewHeight;
+    viewParameters.origin.x = viewWidth / 2;
+    viewParameters.origin.y = viewHeight / 2;
+
+    delete pixmap;
+    pixmap = new QPixmap(viewWidth, viewHeight);
+
+    iterationValues.resize(viewWidth);
+    for(int i=0; i<viewWidth; i++){
+        iterationValues[i].resize(viewHeight);
+    }
+    iterationValuesAreValid = false;
+}
+void Mandelbrot::setMandelLocation(MandelLocation location){
+    this->mandelLocation = location;
+}
+void Mandelbrot::setMaxIterations(uint maxIterations){
+    this->maxIterations = maxIterations;
+}
+void Mandelbrot::setZoomMultiplier(precisionFloat zoomMultiplier){
+    this->zoomMultiplier = zoomMultiplier;
+}
+
+
+MandelPoint Mandelbrot::transformViewPointToMandelPoint(ViewPoint point, ViewParameters viewParameters, MandelLocation mandelLocation){
+
+    int xViewDiff = point.x - viewParameters.origin.x;
+    int yViewDiff = viewParameters.origin.y - point.y;
+    precisionFloat scaledX = xViewDiff * mandelLocation.pixelDelta;
+    precisionFloat scaledY = yViewDiff * mandelLocation.pixelDelta;
+    precisionFloat translatedX = scaledX + (precisionFloat)mandelLocation.origin.x;
+    precisionFloat translatedY = scaledY + (precisionFloat)mandelLocation.origin.y;
+    return MandelPoint(translatedX, translatedY);
+
+/*
+    MandelPoint mandelPoint;
+    mandelPoint.x = (precisionFloat)(point.x - viewParameters.origin.x) * mandelLocation.pixelDelta + (precisionFloat)mandelLocation.origin.x;
+    mandelPoint.y = (precisionFloat)(viewParameters.origin.y - point.y) * mandelLocation.pixelDelta + (precisionFloat)mandelLocation.origin.y;
+    return mandelPoint;
+   */
+}
+
+
+uint Mandelbrot::calculateNumMandelbrotEscapeIterations(MandelPoint point){
+    precisionFloat x = 0.0;
+    precisionFloat y = 0.0;
     int i = 0;
     while(x*x + y*y < 2*2 && i < maxIterations){
-        long double xtmp = x*x - y*y + x0;
-        y = 2*x*y + y0;
+        precisionFloat xtmp = x*x - y*y + point.x;
+        y = 2*x*y + point.y;
         x = xtmp;
         i++;
     }
-
     return i;
 }
-
-QColor Mandelbrot::calculateIterationColor(int i){
-    /*
-    QColor color;
-    if(i==maxIterations){
-        return QColor(0, 0, 0);
+QColor Mandelbrot::calculateIterationValueColor(uint i){
+    if(i == 1){
+        return QColor(255, 0, 0);
     }
-    #define ITERATION_MOD 7
-    int rgb[ITERATION_MOD][3] = {
-        {0, 0, 255}, {0, 255, 0}, {0, 255, 255}, {255, 0, 0}, {255, 0, 255}, {255, 255, 0}, {255, 255, 255}
-    };
-    int indicator = i % ITERATION_MOD;
-    return QColor(rgb[indicator][0], rgb[indicator][1], rgb[indicator][2]);
-    */
-
-
     if(i == maxIterations){return QColor(0, 0, 0);}
-    int val = (i*6) % 256;
-    return QColor(0, val, val);
+    int val = (i*8) % 256;
+    return QColor(val, 0, val);
 }
-
-QColor Mandelbrot::calculateMandelPointColor(long double a, long double b){
-    return calculateIterationColor(calculateNumMandelbrotEscapeIterations(a, b));
-}
-
-QColor Mandelbrot::calculateViewPointColor(int x, int y){
-    long double mandelA, mandelB;
-    mandelA = (long double)(x - viewOriginX) * mandelPixelOffset + mandelOriginX;
-    mandelB = (long double)(viewOriginY - y) * mandelPixelOffset + mandelOriginY;
-    return calculateMandelPointColor(mandelA, mandelB);
+QColor Mandelbrot::calculateMandelPointColor(MandelPoint point){
+    return calculateIterationValueColor(calculateNumMandelbrotEscapeIterations(point));
 }
 
 
-
+void Mandelbrot::mapMandelLocationToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, vector<vector<uint>> &iterationValues){
+    for(int i=0; i<viewParameters.width; i++){
+        for(int j=0; j<viewParameters.height; j++){
+            MandelPoint mandelPoint = transformViewPointToMandelPoint(ViewPoint(i, j), viewParameters, mandelLocation);
+            uint iterations = calculateNumMandelbrotEscapeIterations(mandelPoint);
+            iterationValues[i][j] = iterations;
+        }
+    }
+    int asdkfjdsf = 0;
+}
+void Mandelbrot::mapIterationValuesToPixmap(vector<vector<uint>> const &iterationValues){
+    for(int i=0; i<viewParameters.width; i++){
+        for(int j=0; j<viewParameters.height; j++){
+            QPainter painter(pixmap);
+            painter.setPen(calculateIterationValueColor(iterationValues[i][j]));
+            painter.drawPoint(i, j);
+        }
+    }
+    int aksfjdsf = 0;
+}
 
 
 
 void Mandelbrot::paintEvent(QPaintEvent *event){
-    this->setWindowTitle(tr("Rendering..."));
-    if(!pixMapIsValid){
-        validatePixmap();
+    paintPixmap(this->pixmap);
+}
+void Mandelbrot::paintPixmap(QPixmap *pixmap){
+    if(!iterationValuesAreValid){
+        mapMandelLocationToIterationValues(mandelLocation, viewParameters, iterationValues);
+        iterationValuesAreValid = true;
     }
+    mapIterationValuesToPixmap(iterationValues);
+
     QPainter painter(this);
-    painter.drawPixmap(0, 0, viewWidth, viewHeight, *pixmap);
-    this->setWindowTitle(tr(PROGRAM_NAME));
+    painter.drawPixmap(0, 0, viewParameters.width, viewParameters.height, *pixmap);
 }
 
-void Mandelbrot::validatePixmap(){
-    QPainter painter(pixmap);
-    for(int i=0; i<viewWidth; i++){
-        for(int j=0; j<viewHeight; j++){
-            painter.setPen(calculateViewPointColor(i, j));
-            painter.drawPoint(i, j);
-        }
-    }
-    pixMapIsValid = true;
-}
+
 
 void Mandelbrot::resizeEvent(QResizeEvent *event){
-    emit slotResize();
+    emit slotResizeEvent();
 }
 
-void Mandelbrot::recalculateViewParameters(){
-    viewOriginX = viewWidth / 2;
-    viewOriginY = viewHeight / 2;
-}
 
 void Mandelbrot::mousePressEvent(QMouseEvent *event){
     this->latestQMouseEvent = event;
-    emit slotZoom();
+    emit slotZoomEvent();
 }
 
 
 
-void Mandelbrot::slotZoom(){
-    //recalculating mandelPixelOffset
-    #define ZOOM_MULTIPLIER .5
+void Mandelbrot::slotZoomEvent(){
+    //recalculating mandelPixelDelta
     if(latestQMouseEvent->button() == Qt::RightButton){
-        this->mandelPixelOffset /= ZOOM_MULTIPLIER;
-       // this->maxIterations *= ZOOM_MULTIPLIER;
+        mandelLocation.pixelDelta *= zoomMultiplier;
     }else if(latestQMouseEvent->button() == Qt::LeftButton){
-        this->mandelPixelOffset *= ZOOM_MULTIPLIER;
-       // this->maxIterations /= ZOOM_MULTIPLIER;
+        mandelLocation.pixelDelta /= zoomMultiplier;
     }
 
     //recalculating mandelOrigin
-    int xpos = latestQMouseEvent->x();
-    int ypos = latestQMouseEvent->y();
-    int dxViewOrigin = viewOriginX - xpos;
-    int dyViewOrigin = viewOriginY - ypos;
-    this->mandelOriginX = (long double)(xpos - viewOriginX) * mandelPixelOffset + mandelOriginX;
-    //this->mandelOriginX += (long double)mandelPixelOffset * dxViewOrigin;
-    this->mandelOriginY = (long double)(viewOriginY - ypos) * mandelPixelOffset + mandelOriginY;
-    //this->mandelOriginY += (long double)mandelPixelOffset * dyViewOrigin;
+    ViewPoint point(latestQMouseEvent->x(), latestQMouseEvent->y());
+    MandelLocation newMandelLocation(transformViewPointToMandelPoint(point, viewParameters, mandelLocation), mandelLocation.pixelDelta);
+    setMandelLocation(newMandelLocation);
 
-    pixMapIsValid = false;
+    iterationValuesAreValid = false;
     this->update();
 }
 
-void Mandelbrot::slotResize(){
-    this->viewWidth = this->frameSize().width();
-    this->viewHeight = this->frameSize().height();
-    recalculateViewParameters();
-    this->pixMapIsValid = false;
-    delete pixmap;
-    pixmap = new QPixmap(viewWidth, viewHeight);
+
+void Mandelbrot::slotResizeEvent(){
+    setViewParameters(this->frameSize().width(), this->frameSize().height());
+    this->iterationValuesAreValid = false;
     this->update();
 }
 

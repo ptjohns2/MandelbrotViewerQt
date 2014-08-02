@@ -2,18 +2,61 @@
 #define MANDELBROT_HPP
 
 #include <vector>
+using std::vector;
 
 #include <QColor>
-#include <QImage>
-#include <QPixmap>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsView>
+#include <QImage>
+#include <QPixmap>
 #include <QPainter>
 #include <QResizeEvent>
 
-/*
-http://stackoverflow.com/questions/5960074/qimage-in-a-qgraphics-scene
-*/
+#define DEFAULT_VIEW_WIDTH          400
+#define DEFAULT_VIEW_HEIGHT         400
+#define DEFAULT_MANDEL_ORIGIN_X     -0.75
+#define DEFAULT_MANDEL_ORIGIN_Y     0.0
+#define DEFAULT_MANDEL_PIXEL_DELTA  0.0035
+#define DEFAULT_MAX_ITERATIONS      10000
+#define DEFAULT_ZOOM_MULTIPLIER     2.0
+
+typedef long double precisionFloat;
+
+class MandelPoint{
+    public:
+        MandelPoint()
+            :x(0.0), y(0.0){}
+        MandelPoint(precisionFloat x, precisionFloat y)
+            :x(x), y(y){}
+        precisionFloat x, y;
+};
+class MandelLocation{
+    public:
+        MandelLocation()
+            :origin(MandelPoint()), pixelDelta(0.0){}
+        MandelLocation(MandelPoint origin, precisionFloat pixelDelta)
+            :origin(origin), pixelDelta(pixelDelta){}
+        MandelPoint origin;
+        precisionFloat pixelDelta;
+};
+
+class ViewPoint{
+    public:
+        ViewPoint()
+            :x(0), y(0){}
+        ViewPoint(uint x, uint y)
+            :x(x), y(y){}
+        uint x, y;
+};
+class ViewParameters{
+    public:
+        ViewParameters()
+            :width(0), height(0), origin(ViewPoint()){}
+        ViewParameters(uint width, uint height, ViewPoint origin)
+            :width(width), height(height), origin(origin){}
+        uint width, height;
+        ViewPoint origin;
+};
 
 
 class Mandelbrot : public QWidget{
@@ -21,12 +64,27 @@ class Mandelbrot : public QWidget{
 
     public:
         Mandelbrot(QWidget *parent = NULL);
+        void initPointers();
+        void init();
         ~Mandelbrot();
+        void deinit();
 
-        int calculateNumMandelbrotEscapeIterations(long double x0, long double y0);
-        QColor calculateIterationColor(int i);
-        QColor calculateMandelPointColor(long double a, long double b);
-        QColor calculateViewPointColor(int x, int y);
+        void setViewParameters(uint viewWidth, uint viewHeight);
+        void setMandelLocation(MandelLocation location);
+        void setMaxIterations(uint maxIterations);
+        void setZoomMultiplier(precisionFloat zoomMultiplier);
+
+        static MandelPoint transformViewPointToMandelPoint(ViewPoint point, ViewParameters viewParameters, MandelLocation mandelLocation);
+
+        MandelLocation zoomMandelLocationIn(MandelLocation location);
+        MandelLocation zoomMandelLocationOut(MandelLocation location);
+
+        static uint calculateNumMandelbrotEscapeIterations(MandelPoint point);
+        static QColor calculateIterationValueColor(uint i);
+        static QColor calculateMandelPointColor(MandelPoint point);
+
+        static void mapMandelLocationToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, vector<vector<uint>> &iterationValues);
+        void mapIterationValuesToPixmap(vector<vector<uint>> const &iterationValues);
 
     signals:
         void signalZoom();
@@ -34,35 +92,28 @@ class Mandelbrot : public QWidget{
 
     protected:
         void paintEvent(QPaintEvent *event);
-        /**/ void validatePixmap();
+        void paintPixmap(QPixmap *pixmap);
 
         void resizeEvent(QResizeEvent *event);
-        /**/ void recalculateViewParameters();
 
         void mousePressEvent(QMouseEvent *event);
         QMouseEvent *latestQMouseEvent;
 
     public slots:
-        void slotZoom();
-        void slotResize();
-
-
-
-
+        void slotZoomEvent();
+        void slotResizeEvent();
 
     private:
         QPixmap *pixmap;
-        bool pixMapIsValid;
+        vector<vector<uint>> iterationValues;
+        bool iterationValuesAreValid;
 
+        ViewParameters viewParameters;
+        MandelLocation mandelLocation;
 
-        int viewWidth, viewHeight;
+        static uint maxIterations;
+        static precisionFloat zoomMultiplier;
 
-        int viewOriginX, viewOriginY;
-
-        long double mandelOriginX, mandelOriginY;
-        long double mandelPixelOffset;
-
-        int maxIterations;
 
 };
 
