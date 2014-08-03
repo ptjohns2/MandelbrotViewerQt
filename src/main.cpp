@@ -11,6 +11,7 @@ int main(int argc, char** args){
     QApplication app(argc, args);
 
     Mandelbrot mandelbrot = Mandelbrot();
+    QColor mixedColor = mandelbrot.mixColors(0.5, QColor(255, 0, 255), QColor(0, 255, 0));
     mandelbrot.raise();
     mandelbrot.show();
 

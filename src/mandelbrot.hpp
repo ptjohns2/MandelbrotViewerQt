@@ -13,16 +13,26 @@ using std::vector;
 #include <QResizeEvent>
 
 #define DEFAULT_VIEW_WIDTH          800
-#define DEFAULT_VIEW_HEIGHT         800
+#define DEFAULT_VIEW_HEIGHT         600
+
 #define DEFAULT_MANDEL_ORIGIN_X     -0.75
 #define DEFAULT_MANDEL_ORIGIN_Y     0.0
 #define DEFAULT_MANDEL_PIXEL_DELTA  0.0035
+/*
+#define DEFAULT_MANDEL_ORIGIN_X     -0.74850421963770331L
+#define DEFAULT_MANDEL_ORIGIN_Y     0.099892405452730634L
+#define DEFAULT_MANDEL_PIXEL_DELTA  1.0186340659856796e-013L
+*/
 #define DEFAULT_MAX_ITERATIONS      10000
 #define DEFAULT_ZOOM_MULTIPLIER     2.0
+
+#define DEFAULT_QCOLOR_IN_SET       (QColor(0, 0, 0))
 
 #define DEFAULT_MAX_NUM_WORKERS_THREADS      10
 
 typedef long double precisionFloat;
+typedef float dwellValue;
+
 
 class MandelPoint{
     public:
@@ -81,13 +91,15 @@ class Mandelbrot : public QWidget{
         MandelLocation zoomMandelLocationIn(MandelLocation location);
         MandelLocation zoomMandelLocationOut(MandelLocation location);
 
-        static uint calculateNumMandelbrotEscapeIterations(MandelPoint point);
-        static QColor calculateIterationValueColor(uint i);
+        static dwellValue calculateMandelPointDwellValue(MandelPoint point);
+        static QColor calculateDwellValueColor(dwellValue value);
         static QColor calculateMandelPointColor(MandelPoint point);
+        
+        static QColor mixColors(precisionFloat ratio, QColor const &lower, QColor const &higher);
 
-        static void mapMandelLocationSegmentToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, uint **iterationValues, uint startLine, uint endLine);
-        static void mapMandelLocationToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, uint **iterationValues);
-        void mapIterationValuesToQImage(uint  **iterationValues);
+        static void mapMandelLocationSegmentToDwellValues(MandelLocation mandelLocation, ViewParameters viewParameters, dwellValue **iterationValues, uint startLine, uint endLine);
+        static void mapMandelLocationToDwellValues(MandelLocation mandelLocation, ViewParameters viewParameters, dwellValue **iterationValues);
+        void mapDwellValuesToQImage(dwellValue  **iterationValues);
 
     signals:
         void signalZoom();
@@ -108,8 +120,8 @@ class Mandelbrot : public QWidget{
 
     private:
         QImage *image;
-        uint  **iterationValues;
-        bool iterationValuesAreValid;
+        dwellValue  **dwellValues;
+        bool dwellValuesAreValid;
 
         ViewParameters viewParameters;
         MandelLocation mandelLocation;
