@@ -16,7 +16,7 @@ Mandelbrot::Mandelbrot(QWidget *parent)
 uint Mandelbrot::maxIterations = DEFAULT_MAX_ITERATIONS;
 precisionFloat Mandelbrot::zoomMultiplier = DEFAULT_ZOOM_MULTIPLIER;
 void Mandelbrot::initPointers(){
-    pixmap = NULL;
+    image = NULL;
 }
 
 void Mandelbrot::init(){
@@ -33,8 +33,8 @@ Mandelbrot::~Mandelbrot(){
     deinit();
 }
 void Mandelbrot::deinit(){
-    delete pixmap;
-    pixmap = NULL;
+    delete image;
+    initPointers();
 }
 
 
@@ -44,8 +44,8 @@ void Mandelbrot::setViewParameters(uint viewWidth, uint viewHeight){
     viewParameters.origin.x = viewWidth / 2;
     viewParameters.origin.y = viewHeight / 2;
 
-    delete pixmap;
-    pixmap = new QPixmap(viewWidth, viewHeight);
+    delete image;
+    image = new QImage(viewWidth, viewHeight, QImage::Format_RGB888);
 
     iterationValues.resize(viewWidth);
     for(int i=0; i<viewWidth; i++){
@@ -101,7 +101,10 @@ QColor Mandelbrot::calculateIterationValueColor(uint i){
     }
     if(i == maxIterations){return QColor(0, 0, 0);}
     int val = (i*8) % 256;
-    return QColor(val, 0, val);
+    if(val > 200){
+        return QColor(val - 150, 0, val - 150);
+    }
+    return QColor(0, val, 0);
 }
 QColor Mandelbrot::calculateMandelPointColor(MandelPoint point){
     return calculateIterationValueColor(calculateNumMandelbrotEscapeIterations(point));
@@ -118,31 +121,32 @@ void Mandelbrot::mapMandelLocationToIterationValues(MandelLocation mandelLocatio
     }
     int asdkfjdsf = 0;
 }
-void Mandelbrot::mapIterationValuesToPixmap(vector<vector<uint>> const &iterationValues){
+void Mandelbrot::mapIterationValuesToQImage(vector<vector<uint>> const &iterationValues){
     for(int i=0; i<viewParameters.width; i++){
         for(int j=0; j<viewParameters.height; j++){
-            QPainter painter(pixmap);
-            painter.setPen(calculateIterationValueColor(iterationValues[i][j]));
-            painter.drawPoint(i, j);
+            image->setPixel(i, j, calculateIterationValueColor(iterationValues[i][j]).rgb());
         }
     }
-    int aksfjdsf = 0;
 }
 
 
 
 void Mandelbrot::paintEvent(QPaintEvent *event){
-    paintPixmap(this->pixmap);
+    paintImage(this->image);
 }
-void Mandelbrot::paintPixmap(QPixmap *pixmap){
+void Mandelbrot::paintImage(QImage *image){
     if(!iterationValuesAreValid){
         mapMandelLocationToIterationValues(mandelLocation, viewParameters, iterationValues);
         iterationValuesAreValid = true;
     }
-    mapIterationValuesToPixmap(iterationValues);
+    mapIterationValuesToQImage(iterationValues);
 
     QPainter painter(this);
-    painter.drawPixmap(0, 0, viewParameters.width, viewParameters.height, *pixmap);
+    //painter.drawPixmap(0, 0, viewParameters.width, viewParameters.height, *pixmap);
+
+    //painter.drawImage(0, 0, viewParameters.width, viewParameters.height, *image);
+    painter.drawImage(0, 0, *image);
+    //painter.drawImage(viewParameters.width, viewParameters.height, *image);
 }
 
 

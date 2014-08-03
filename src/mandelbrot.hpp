@@ -84,7 +84,7 @@ class Mandelbrot : public QWidget{
         static QColor calculateMandelPointColor(MandelPoint point);
 
         static void mapMandelLocationToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, vector<vector<uint>> &iterationValues);
-        void mapIterationValuesToPixmap(vector<vector<uint>> const &iterationValues);
+        void mapIterationValuesToQImage(vector<vector<uint>> const &iterationValues);
 
     signals:
         void signalZoom();
@@ -92,7 +92,7 @@ class Mandelbrot : public QWidget{
 
     protected:
         void paintEvent(QPaintEvent *event);
-        void paintPixmap(QPixmap *pixmap);
+        void paintImage(QImage *image);
 
         void resizeEvent(QResizeEvent *event);
 
@@ -104,7 +104,7 @@ class Mandelbrot : public QWidget{
         void slotResizeEvent();
 
     private:
-        QPixmap *pixmap;
+        QImage *image;
         vector<vector<uint>> iterationValues;
         bool iterationValuesAreValid;
 
