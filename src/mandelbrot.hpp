@@ -12,13 +12,15 @@ using std::vector;
 #include <QPainter>
 #include <QResizeEvent>
 
-#define DEFAULT_VIEW_WIDTH          400
-#define DEFAULT_VIEW_HEIGHT         400
+#define DEFAULT_VIEW_WIDTH          800
+#define DEFAULT_VIEW_HEIGHT         800
 #define DEFAULT_MANDEL_ORIGIN_X     -0.75
 #define DEFAULT_MANDEL_ORIGIN_Y     0.0
 #define DEFAULT_MANDEL_PIXEL_DELTA  0.0035
 #define DEFAULT_MAX_ITERATIONS      10000
 #define DEFAULT_ZOOM_MULTIPLIER     2.0
+
+#define DEFAULT_MAX_NUM_WORKERS_THREADS      10
 
 typedef long double precisionFloat;
 
@@ -83,8 +85,9 @@ class Mandelbrot : public QWidget{
         static QColor calculateIterationValueColor(uint i);
         static QColor calculateMandelPointColor(MandelPoint point);
 
-        static void mapMandelLocationToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, vector<vector<uint>> &iterationValues);
-        void mapIterationValuesToQImage(vector<vector<uint>> const &iterationValues);
+        static void mapMandelLocationSegmentToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, uint **iterationValues, uint startLine, uint endLine);
+        static void mapMandelLocationToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, uint **iterationValues);
+        void mapIterationValuesToQImage(uint  **iterationValues);
 
     signals:
         void signalZoom();
@@ -105,7 +108,7 @@ class Mandelbrot : public QWidget{
 
     private:
         QImage *image;
-        vector<vector<uint>> iterationValues;
+        uint  **iterationValues;
         bool iterationValuesAreValid;
 
         ViewParameters viewParameters;

@@ -1,5 +1,7 @@
 #include "mandelbrot.hpp"
 
+#include <thread>
+
 #include <QBrush>
 
 
@@ -17,6 +19,7 @@ uint Mandelbrot::maxIterations = DEFAULT_MAX_ITERATIONS;
 precisionFloat Mandelbrot::zoomMultiplier = DEFAULT_ZOOM_MULTIPLIER;
 void Mandelbrot::initPointers(){
     image = NULL;
+    iterationValues = NULL;
 }
 
 void Mandelbrot::init(){
@@ -33,23 +36,31 @@ Mandelbrot::~Mandelbrot(){
     deinit();
 }
 void Mandelbrot::deinit(){
+    if(image != NULL){
+        for(int i=0; i<viewParameters.width; i++){
+            iterationValues[i] = new uint[viewParameters.height];
+        }
+    }
     delete image;
+    image = NULL;
+    delete iterationValues;
+    iterationValues = NULL;
     initPointers();
 }
 
 
 void Mandelbrot::setViewParameters(uint viewWidth, uint viewHeight){
+    deinit();
     viewParameters.width = viewWidth;
     viewParameters.height = viewHeight;
     viewParameters.origin.x = viewWidth / 2;
     viewParameters.origin.y = viewHeight / 2;
 
-    delete image;
     image = new QImage(viewWidth, viewHeight, QImage::Format_RGB888);
 
-    iterationValues.resize(viewWidth);
+    iterationValues = new uint*[viewWidth];
     for(int i=0; i<viewWidth; i++){
-        iterationValues[i].resize(viewHeight);
+        iterationValues[i] = new uint[viewHeight];
     }
     iterationValuesAreValid = false;
 }
@@ -96,14 +107,8 @@ uint Mandelbrot::calculateNumMandelbrotEscapeIterations(MandelPoint point){
     return i;
 }
 QColor Mandelbrot::calculateIterationValueColor(uint i){
-    if(i == 1){
-        return QColor(255, 0, 0);
-    }
     if(i == maxIterations){return QColor(0, 0, 0);}
     int val = (i*8) % 256;
-    if(val > 200){
-        return QColor(val - 150, 0, val - 150);
-    }
     return QColor(0, val, 0);
 }
 QColor Mandelbrot::calculateMandelPointColor(MandelPoint point){
@@ -111,17 +116,32 @@ QColor Mandelbrot::calculateMandelPointColor(MandelPoint point){
 }
 
 
-void Mandelbrot::mapMandelLocationToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, vector<vector<uint>> &iterationValues){
-    for(int i=0; i<viewParameters.width; i++){
+
+void Mandelbrot::mapMandelLocationSegmentToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, uint **iterationValues, uint startLine, uint endLine){
+    for(int i=startLine; i<endLine; i++){
         for(int j=0; j<viewParameters.height; j++){
             MandelPoint mandelPoint = transformViewPointToMandelPoint(ViewPoint(i, j), viewParameters, mandelLocation);
             uint iterations = calculateNumMandelbrotEscapeIterations(mandelPoint);
             iterationValues[i][j] = iterations;
         }
     }
-    int asdkfjdsf = 0;
 }
-void Mandelbrot::mapIterationValuesToQImage(vector<vector<uint>> const &iterationValues){
+
+void Mandelbrot::mapMandelLocationToIterationValues(MandelLocation mandelLocation, ViewParameters viewParameters, uint **iterationValues){
+    vector<std::thread*> threads;
+    for(int i=0; i<DEFAULT_MAX_NUM_WORKERS_THREADS; i++){
+        uint startLine = i*(viewParameters.width / DEFAULT_MAX_NUM_WORKERS_THREADS);
+        uint endLine = (i+1)*(viewParameters.width / DEFAULT_MAX_NUM_WORKERS_THREADS);
+        std::thread *thread = new std::thread(mapMandelLocationSegmentToIterationValues, mandelLocation, viewParameters, iterationValues, startLine, endLine);
+        threads.push_back(thread);
+    }
+    for(int i=0; i<threads.size(); i++){
+        threads[i]->join();
+        delete threads[i];
+    }
+}
+
+void Mandelbrot::mapIterationValuesToQImage(uint **iterationValues){
     for(int i=0; i<viewParameters.width; i++){
         for(int j=0; j<viewParameters.height; j++){
             image->setPixel(i, j, calculateIterationValueColor(iterationValues[i][j]).rgb());
@@ -136,6 +156,7 @@ void Mandelbrot::paintEvent(QPaintEvent *event){
 }
 void Mandelbrot::paintImage(QImage *image){
     if(!iterationValuesAreValid){
+        //threaded version
         mapMandelLocationToIterationValues(mandelLocation, viewParameters, iterationValues);
         iterationValuesAreValid = true;
     }
@@ -183,7 +204,6 @@ void Mandelbrot::slotZoomEvent(){
 
 void Mandelbrot::slotResizeEvent(){
     setViewParameters(this->frameSize().width(), this->frameSize().height());
-    this->iterationValuesAreValid = false;
     this->update();
 }
 
