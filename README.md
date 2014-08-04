@@ -20,3 +20,6 @@ TODO:
    
    
 ![Screenshot](/demos/spiral1.png?raw=true)
+
+
+![Screenshot](/demos/mini_mandel2.png?raw=true)
