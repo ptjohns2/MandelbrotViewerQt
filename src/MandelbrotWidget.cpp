@@ -147,7 +147,7 @@ dwellValue MandelbrotWidget::calculateMandelPointDwellValue(MandelPoint point){
 QColor MandelbrotWidget::calculateDwellValueColor(dwellValue value){
     
     if(value == maxIterations){return DEFAULT_QCOLOR_IN_SET;}
-    value = uint(value) % 256;
+    value = uint(value * 8) % 256;
     return QColor(value, 0, value);
     
     

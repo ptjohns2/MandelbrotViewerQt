@@ -16,4 +16,7 @@ TODO:
 ![Screenshot](/demos/GUI_mandel.png?raw=true)
    
    
-![Screenshot](/demos/miniMandel1_small.png?raw=true)
+![Screenshot](/demos/mini_mandel1.png?raw=true)
+   
+   
+![Screenshot](/demos/spiral1.png?raw=true)
