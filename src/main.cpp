@@ -1,5 +1,5 @@
 
-#include "mandelbrot.hpp"
+#include "MandelbrotWidget.hpp"
 
 #include <QApplication>
 #include <time.h>
@@ -11,7 +11,6 @@ int main(int argc, char** args){
     QApplication app(argc, args);
 
     MandelbrotWidget mandelbrot = MandelbrotWidget();
-    QColor mixedColor = mandelbrot.mixColors(0.5, QColor(255, 0, 255), QColor(0, 255, 0));
     mandelbrot.raise();
     mandelbrot.show();
 

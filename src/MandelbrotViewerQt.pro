@@ -5,4 +5,5 @@ SOURCES += \
     MandelbrotWidget.cpp
 
 HEADERS += \
-    MandelbrotWidget.hpp
+    MandelbrotWidget.hpp \
+    types.hpp
