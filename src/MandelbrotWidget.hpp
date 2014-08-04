@@ -1,5 +1,5 @@
-#ifndef MANDELBROT_HPP
-#define MANDELBROT_HPP
+#ifndef MandelbrotWidget_HPP
+#define MandelbrotWidget_HPP
 
 #include <limits>
 #include <vector>
@@ -24,7 +24,7 @@ using std::vector;
 #define DEFAULT_MANDEL_ORIGIN_Y     0.099892405452730634L
 #define DEFAULT_MANDEL_PIXEL_DELTA  1.0186340659856796e-013L
 */
-#define DEFAULT_MAX_ITERATIONS      1000
+#define DEFAULT_MAX_ITERATIONS      10000
 #define DEFAULT_ZOOM_MULTIPLIER     2.0
 
 #define DEFAULT_QCOLOR_IN_SET       (QColor(0, 0, 0))
@@ -73,14 +73,15 @@ class ViewParameters{
 };
 
 
-class Mandelbrot : public QWidget{
+
+class MandelbrotWidget : public QWidget{
     Q_OBJECT
 
     public:
-        Mandelbrot(QWidget *parent = NULL);
+        MandelbrotWidget(QWidget *parent = NULL);
         void initPointers();
         void init();
-        ~Mandelbrot();
+        ~MandelbrotWidget();
         void deinit();
 
         void setViewParameters(uint viewWidth, uint viewHeight);
@@ -136,7 +137,7 @@ class Mandelbrot : public QWidget{
 
 };
 
-#endif // MANDELBROT_HPP
+#endif // MandelbrotWidget_HPP
 
 
 

@@ -2,7 +2,7 @@ QT += widgets
 
 SOURCES += \
     main.cpp \
-    mandelbrot.cpp
+    MandelbrotWidget.cpp
 
 HEADERS += \
-    mandelbrot.hpp
+    MandelbrotWidget.hpp

@@ -1,4 +1,4 @@
-#include "mandelbrot.hpp"
+#include "MandelbrotWidget.hpp"
 
 #include <cassert>
 #include <math.h>
@@ -7,7 +7,7 @@
 #include <QBrush>
 
 
-Mandelbrot::Mandelbrot(QWidget *parent)
+MandelbrotWidget::MandelbrotWidget(QWidget *parent)
     :   QWidget(parent)
 {
     initPointers();
@@ -17,14 +17,14 @@ Mandelbrot::Mandelbrot(QWidget *parent)
     //connect(this, SIGNAL(signalResize()), this, SLOT(slotResizeEvent()));
 
 }
-uint Mandelbrot::maxIterations = DEFAULT_MAX_ITERATIONS;
-precisionFloat Mandelbrot::zoomMultiplier = DEFAULT_ZOOM_MULTIPLIER;
-void Mandelbrot::initPointers(){
+uint MandelbrotWidget::maxIterations = DEFAULT_MAX_ITERATIONS;
+precisionFloat MandelbrotWidget::zoomMultiplier = DEFAULT_ZOOM_MULTIPLIER;
+void MandelbrotWidget::initPointers(){
     image = NULL;
     dwellValues = NULL;
 }
 
-void Mandelbrot::init(){
+void MandelbrotWidget::init(){
     this->dwellValuesAreValid = false;
 
     setViewParameters(DEFAULT_VIEW_WIDTH, DEFAULT_VIEW_HEIGHT);
@@ -34,10 +34,10 @@ void Mandelbrot::init(){
     setZoomMultiplier(DEFAULT_ZOOM_MULTIPLIER);
 }
 
-Mandelbrot::~Mandelbrot(){
+MandelbrotWidget::~MandelbrotWidget(){
     deinit();
 }
-void Mandelbrot::deinit(){
+void MandelbrotWidget::deinit(){
     if(dwellValues != NULL){
         for(int i=0; i<viewParameters.width; i++){
             delete dwellValues[i];
@@ -53,7 +53,7 @@ void Mandelbrot::deinit(){
 }
 
 
-void Mandelbrot::setViewParameters(uint viewWidth, uint viewHeight){
+void MandelbrotWidget::setViewParameters(uint viewWidth, uint viewHeight){
     deinit();
     viewParameters.width = viewWidth;
     viewParameters.height = viewHeight;
@@ -68,18 +68,18 @@ void Mandelbrot::setViewParameters(uint viewWidth, uint viewHeight){
     }
     dwellValuesAreValid = false;
 }
-void Mandelbrot::setMandelLocation(MandelLocation location){
+void MandelbrotWidget::setMandelLocation(MandelLocation location){
     this->mandelLocation = location;
 }
-void Mandelbrot::setMaxIterations(uint maxIterations){
+void MandelbrotWidget::setMaxIterations(uint maxIterations){
     this->maxIterations = maxIterations;
 }
-void Mandelbrot::setZoomMultiplier(precisionFloat zoomMultiplier){
+void MandelbrotWidget::setZoomMultiplier(precisionFloat zoomMultiplier){
     this->zoomMultiplier = zoomMultiplier;
 }
 
 
-MandelPoint Mandelbrot::transformViewPointToMandelPoint(ViewPoint point, ViewParameters viewParameters, MandelLocation mandelLocation){
+MandelPoint MandelbrotWidget::transformViewPointToMandelPoint(ViewPoint point, ViewParameters viewParameters, MandelLocation mandelLocation){
 
     int xViewDiff = point.x - viewParameters.origin.x;
     int yViewDiff = viewParameters.origin.y - point.y;
@@ -98,7 +98,7 @@ MandelPoint Mandelbrot::transformViewPointToMandelPoint(ViewPoint point, ViewPar
 }
 
 
-uint Mandelbrot::calculateMandelPointIterationCount(MandelPoint point){
+uint MandelbrotWidget::calculateMandelPointIterationCount(MandelPoint point){
     precisionFloat x = 0.0;
     precisionFloat y = 0.0;
     int i = 0;
@@ -110,7 +110,7 @@ uint Mandelbrot::calculateMandelPointIterationCount(MandelPoint point){
     }
     return i;
 }
-dwellValue Mandelbrot::calculateMandelPointDwellValue(MandelPoint point){
+dwellValue MandelbrotWidget::calculateMandelPointDwellValue(MandelPoint point){
     precisionFloat x = 0.0;
     precisionFloat y = 0.0;
     int i = 0;
@@ -144,12 +144,12 @@ dwellValue Mandelbrot::calculateMandelPointDwellValue(MandelPoint point){
     return dwellValue;
 }
 
-QColor Mandelbrot::calculateDwellValueColor(dwellValue value){
-    /*
-    if(i == maxIterations){return DEFAULT_QCOLOR_IN_SET;}
-    uint val = (i*8) % 256;
-    return QColor(val, 0, val);
-    */
+QColor MandelbrotWidget::calculateDwellValueColor(dwellValue value){
+    
+    if(value == maxIterations){return DEFAULT_QCOLOR_IN_SET;}
+    value = uint(value) % 256;
+    return QColor(value, 0, value);
+    
     
     QColor color;
     if(value==DWELL_VALUE_IN_SET){
@@ -174,14 +174,14 @@ QColor Mandelbrot::calculateDwellValueColor(dwellValue value){
                      QColor(rgb[(indicator+1)%ITERATION_MOD][0], rgb[(indicator+1)%ITERATION_MOD][1], rgb[(indicator+1)%ITERATION_MOD][2])
             );
 }
-QColor Mandelbrot::calculateIterationCountColor(uint value){
+QColor MandelbrotWidget::calculateIterationCountColor(uint value){
     if(value == maxIterations){return DEFAULT_QCOLOR_IN_SET;}
     value = (value*8) % 256;
     return QColor(value, 0, value);
 }
 
 
-QColor Mandelbrot::mixColors(float ratio, QColor const &lower, QColor const &higher){
+QColor MandelbrotWidget::mixColors(float ratio, QColor const &lower, QColor const &higher){
     if(!(ratio <= 1.0 && ratio >= 0.0)){
      //int asdfad = 21;   
     }
@@ -201,18 +201,21 @@ QColor Mandelbrot::mixColors(float ratio, QColor const &lower, QColor const &hig
 }
 
 
-void Mandelbrot::mapMandelLocationSegmentToDwellValues(MandelLocation mandelLocation, ViewParameters viewParameters, dwellValue **dwellValues, uint startLine, uint endLine){
+void MandelbrotWidget::mapMandelLocationSegmentToDwellValues(MandelLocation mandelLocation, ViewParameters viewParameters, dwellValue **dwellValues, uint startLine, uint endLine){
     for(int i=startLine; i<endLine; i++){
         for(int j=0; j<viewParameters.height; j++){
             MandelPoint mandelPoint = transformViewPointToMandelPoint(ViewPoint(i, j), viewParameters, mandelLocation);
+            
+            //smoothe or normal...?
             dwellValue value = calculateMandelPointDwellValue(mandelPoint);
             //dwellValue value = calculateMandelPointIterationCount(mandelPoint);
+            
             dwellValues[i][j] = value;
         }
     }
 }
 
-void Mandelbrot::mapMandelLocationToDwellValues(MandelLocation mandelLocation, ViewParameters viewParameters, dwellValue **dwellValues){
+void MandelbrotWidget::mapMandelLocationToDwellValues(MandelLocation mandelLocation, ViewParameters viewParameters, dwellValue **dwellValues){
     vector<std::thread*> threads;
     for(int i=0; i<DEFAULT_MAX_NUM_WORKERS_THREADS; i++){
         uint startLine = i*(viewParameters.width / DEFAULT_MAX_NUM_WORKERS_THREADS);
@@ -226,7 +229,7 @@ void Mandelbrot::mapMandelLocationToDwellValues(MandelLocation mandelLocation, V
     }
 }
 
-void Mandelbrot::mapDwellValuesToQImage(dwellValue **dwellValues){
+void MandelbrotWidget::mapDwellValuesToQImage(dwellValue **dwellValues){
     for(int i=0; i<viewParameters.width; i++){
         for(int j=0; j<viewParameters.height; j++){
             image->setPixel(i, j, calculateDwellValueColor(dwellValues[i][j]).rgb());
@@ -236,40 +239,38 @@ void Mandelbrot::mapDwellValuesToQImage(dwellValue **dwellValues){
 
 
 
-void Mandelbrot::paintEvent(QPaintEvent *event){
+void MandelbrotWidget::paintEvent(QPaintEvent *event){
     paintImage(this->image);
 }
-void Mandelbrot::paintImage(QImage *image){
+void MandelbrotWidget::paintImage(QImage *image){
     if(!dwellValuesAreValid){
         //threaded version
         mapMandelLocationToDwellValues(mandelLocation, viewParameters, dwellValues);
         dwellValuesAreValid = true;
     }
     mapDwellValuesToQImage(dwellValues);
-
     QPainter painter(this);
-    //painter.drawPixmap(0, 0, viewParameters.width, viewParameters.height, *pixmap);
 
+    //TODO:?
     //painter.drawImage(0, 0, viewParameters.width, viewParameters.height, *image);
     painter.drawImage(0, 0, *image);
-    //painter.drawImage(viewParameters.width, viewParameters.height, *image);
 }
 
 
 
-void Mandelbrot::resizeEvent(QResizeEvent *event){
+void MandelbrotWidget::resizeEvent(QResizeEvent *event){
     emit slotResizeEvent();
 }
 
 
-void Mandelbrot::mousePressEvent(QMouseEvent *event){
+void MandelbrotWidget::mousePressEvent(QMouseEvent *event){
     this->latestQMouseEvent = event;
     emit slotZoomEvent();
 }
 
 
 
-void Mandelbrot::slotZoomEvent(){
+void MandelbrotWidget::slotZoomEvent(){
     ViewPoint point(latestQMouseEvent->x(), latestQMouseEvent->y());
 
     //ZOOM AND CENTER = CALCULATE pixelDelta FIRST THEN CENTER
@@ -296,7 +297,7 @@ void Mandelbrot::slotZoomEvent(){
 }
 
 
-void Mandelbrot::slotResizeEvent(){
+void MandelbrotWidget::slotResizeEvent(){
     setViewParameters(this->frameSize().width(), this->frameSize().height());
     this->update();
 }

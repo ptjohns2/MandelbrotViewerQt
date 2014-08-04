@@ -10,7 +10,7 @@ int main(int argc, char** args){
 
     QApplication app(argc, args);
 
-    Mandelbrot mandelbrot = Mandelbrot();
+    MandelbrotWidget mandelbrot = MandelbrotWidget();
     QColor mixedColor = mandelbrot.mixColors(0.5, QColor(255, 0, 255), QColor(0, 255, 0));
     mandelbrot.raise();
     mandelbrot.show();
