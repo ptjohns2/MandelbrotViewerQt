@@ -1,6 +1,7 @@
 #ifndef MANDELBROT_HPP
 #define MANDELBROT_HPP
 
+#include <limits>
 #include <vector>
 using std::vector;
 
@@ -12,8 +13,8 @@ using std::vector;
 #include <QPainter>
 #include <QResizeEvent>
 
-#define DEFAULT_VIEW_WIDTH          800
-#define DEFAULT_VIEW_HEIGHT         600
+#define DEFAULT_VIEW_WIDTH          300
+#define DEFAULT_VIEW_HEIGHT         300
 
 #define DEFAULT_MANDEL_ORIGIN_X     -0.75
 #define DEFAULT_MANDEL_ORIGIN_Y     0.0
@@ -23,12 +24,13 @@ using std::vector;
 #define DEFAULT_MANDEL_ORIGIN_Y     0.099892405452730634L
 #define DEFAULT_MANDEL_PIXEL_DELTA  1.0186340659856796e-013L
 */
-#define DEFAULT_MAX_ITERATIONS      10000
+#define DEFAULT_MAX_ITERATIONS      1000
 #define DEFAULT_ZOOM_MULTIPLIER     2.0
 
 #define DEFAULT_QCOLOR_IN_SET       (QColor(0, 0, 0))
+#define DWELL_VALUE_IN_SET          (std::numeric_limits<dwellValue>::max())
 
-#define DEFAULT_MAX_NUM_WORKERS_THREADS      10
+#define DEFAULT_MAX_NUM_WORKERS_THREADS      100
 
 typedef long double precisionFloat;
 typedef float dwellValue;
@@ -90,12 +92,14 @@ class Mandelbrot : public QWidget{
 
         MandelLocation zoomMandelLocationIn(MandelLocation location);
         MandelLocation zoomMandelLocationOut(MandelLocation location);
-
-        static dwellValue calculateMandelPointDwellValue(MandelPoint point);
-        static QColor calculateDwellValueColor(dwellValue value);
-        static QColor calculateMandelPointColor(MandelPoint point);
         
-        static QColor mixColors(precisionFloat ratio, QColor const &lower, QColor const &higher);
+        static dwellValue calculateMandelPointDwellValue(MandelPoint point);
+        static uint calculateMandelPointIterationCount(MandelPoint point);
+        
+        static QColor calculateDwellValueColor(dwellValue value);
+        static QColor calculateIterationCountColor(uint value);
+        
+        static QColor mixColors(float ratio, QColor const &lower, QColor const &higher);
 
         static void mapMandelLocationSegmentToDwellValues(MandelLocation mandelLocation, ViewParameters viewParameters, dwellValue **iterationValues, uint startLine, uint endLine);
         static void mapMandelLocationToDwellValues(MandelLocation mandelLocation, ViewParameters viewParameters, dwellValue **iterationValues);

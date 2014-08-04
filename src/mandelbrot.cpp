@@ -98,7 +98,7 @@ MandelPoint Mandelbrot::transformViewPointToMandelPoint(ViewPoint point, ViewPar
 }
 
 
-dwellValue Mandelbrot::calculateMandelPointDwellValue(MandelPoint point){
+uint Mandelbrot::calculateMandelPointIterationCount(MandelPoint point){
     precisionFloat x = 0.0;
     precisionFloat y = 0.0;
     int i = 0;
@@ -110,6 +110,40 @@ dwellValue Mandelbrot::calculateMandelPointDwellValue(MandelPoint point){
     }
     return i;
 }
+dwellValue Mandelbrot::calculateMandelPointDwellValue(MandelPoint point){
+    precisionFloat x = 0.0;
+    precisionFloat y = 0.0;
+    int i = 0;
+    while(x*x + y*y < 2*2 && i < maxIterations){
+        precisionFloat xtmp = x*x - y*y + point.x;
+        y = 2*x*y + point.y;
+        x = xtmp;
+        i++;
+    }
+    //return i;
+    //Floating point modifications below!
+    
+    //v removes wrinkles
+    //
+    precisionFloat xtmp = x*x - y*y + point.x;
+    y = 2*x*y + point.y;
+    x = xtmp;
+    //i++;
+    xtmp = x*x - y*y + point.x;
+    y = 2*x*y + point.y;
+    x = xtmp;
+    //i++;
+    i+=2;   //combine i++, i++
+    //
+    
+    if(i>=maxIterations){
+        return DWELL_VALUE_IN_SET;   
+    }
+    precisionFloat distance = sqrt(x*x+y*y);
+    precisionFloat dwellValue = (precisionFloat)i - (log(log(distance)) / log(2.0));
+    return dwellValue;
+}
+
 QColor Mandelbrot::calculateDwellValueColor(dwellValue value){
     /*
     if(i == maxIterations){return DEFAULT_QCOLOR_IN_SET;}
@@ -118,31 +152,49 @@ QColor Mandelbrot::calculateDwellValueColor(dwellValue value){
     */
     
     QColor color;
-    if(value==maxIterations){
+    if(value==DWELL_VALUE_IN_SET){
         return QColor(0, 0, 0);
     }
+    /*
     #define ITERATION_MOD 7
     int rgb[ITERATION_MOD][3] = {
         {0, 0, 255}, {0, 255, 0}, {0, 255, 255}, {255, 0, 0}, {255, 0, 255}, {255, 255, 0}, {255, 255, 255}
     };
+    */
+    #define ITERATION_MOD 2
+    int rgb[ITERATION_MOD][3] = {
+        {255, 0, 255}, {0, 0, 0}
+    };
+    
     int indicator = (int)value % ITERATION_MOD;
-    return QColor(rgb[indicator][0], rgb[indicator][1], rgb[indicator][2]);
+    double jnk;
+    float ratio = modf(value, &jnk);
+    return mixColors(ratio, 
+                     QColor(rgb[indicator][0], rgb[indicator][1], rgb[indicator][2]),
+                     QColor(rgb[(indicator+1)%ITERATION_MOD][0], rgb[(indicator+1)%ITERATION_MOD][1], rgb[(indicator+1)%ITERATION_MOD][2])
+            );
 }
-QColor Mandelbrot::calculateMandelPointColor(MandelPoint point){
-    return calculateDwellValueColor(calculateMandelPointDwellValue(point));
+QColor Mandelbrot::calculateIterationCountColor(uint value){
+    if(value == maxIterations){return DEFAULT_QCOLOR_IN_SET;}
+    value = (value*8) % 256;
+    return QColor(value, 0, value);
 }
 
 
-QColor Mandelbrot::mixColors(precisionFloat ratio, QColor const &lower, QColor const &higher){
-    assert(ratio < 1.0 && ratio > 0.0);
+QColor Mandelbrot::mixColors(float ratio, QColor const &lower, QColor const &higher){
+    if(!(ratio <= 1.0 && ratio >= 0.0)){
+     //int asdfad = 21;   
+    }
+   // assert(ratio <= 1.0 && ratio >= 0.0);
+    
     //differentials of each color
     int dr = higher.red() - lower.red();
     int dg = higher.green() - lower.green();
     int db = higher.blue() - lower.blue();
     //fractional differentials of each color (how far towards higher is lower based on ratio?)
-    precisionFloat fdr = ratio * (precisionFloat)dr;
-    precisionFloat fdg = ratio * (precisionFloat)dg;
-    precisionFloat fdb = ratio * (precisionFloat)db;
+    float fdr = ratio * (float)dr;
+    float fdg = ratio * (float)dg;
+    float fdb = ratio * (float)db;
     //fractional differentials added to lower color
     return QColor(lower.red() + fdr, lower.green() + fdg, lower.blue() + fdb);
     
@@ -154,6 +206,7 @@ void Mandelbrot::mapMandelLocationSegmentToDwellValues(MandelLocation mandelLoca
         for(int j=0; j<viewParameters.height; j++){
             MandelPoint mandelPoint = transformViewPointToMandelPoint(ViewPoint(i, j), viewParameters, mandelLocation);
             dwellValue value = calculateMandelPointDwellValue(mandelPoint);
+            //dwellValue value = calculateMandelPointIterationCount(mandelPoint);
             dwellValues[i][j] = value;
         }
     }
