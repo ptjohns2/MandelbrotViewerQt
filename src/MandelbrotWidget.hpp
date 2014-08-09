@@ -15,8 +15,8 @@ using std::vector;
 #include <QPainter>
 #include <QResizeEvent>
 
-#define DEFAULT_VIEW_WIDTH          (300)
-#define DEFAULT_VIEW_HEIGHT         (300)
+#define DEFAULT_VIEW_WIDTH          (500)
+#define DEFAULT_VIEW_HEIGHT         (500)
 
 #define DEFAULT_MANDEL_ORIGIN_X     (-0.75)
 #define DEFAULT_MANDEL_ORIGIN_Y     (0.0)
@@ -26,9 +26,8 @@ using std::vector;
 #define DEFAULT_ZOOM_MULTIPLIER     (2.0)
 
 #define DEFAULT_QCOLOR_IN_SET       (QColor(0, 0, 0))
-#define DWELL_VALUE_IN_SET          (std::numeric_limits<dwellValue>::max())
 
-#define MAX_WORKER_THREADS      (100)
+#define MAX_WORKER_THREADS          (10)
 
 
 
@@ -52,7 +51,7 @@ class MandelbrotWidget : public QWidget{
         
         static dwellValue calculateMandelPointDwellValue(MandelPoint point);
         
-        static QColor calculateDwellValueColor(dwellValue value);
+        QColor calculateDwellValueColor(dwellValue value);
         
         static QColor mixColors(float ratio, QColor const &lower, QColor const &higher);
 
@@ -63,6 +62,7 @@ class MandelbrotWidget : public QWidget{
     signals:
         void signalZoom();
         void signalResize();
+        void signalChangeColor();
 
     protected:
         void paintEvent(QPaintEvent *event);
@@ -73,9 +73,14 @@ class MandelbrotWidget : public QWidget{
         void mousePressEvent(QMouseEvent *event);
         QMouseEvent *latestQMouseEvent;
 
+        void keyPressEvent(QKeyEvent *event);
+        bool latestColorChangeEventIsForward;
+
     public slots:
         void slotZoomEvent();
         void slotResizeEvent();
+        void slotChangeColorEvent();
+
 
     private:
         QImage *image;
@@ -88,7 +93,8 @@ class MandelbrotWidget : public QWidget{
         static uint maxIterations;
         static precisionFloat zoomMultiplier;
 
-
+        static dwellValue DWELL_VALUE_IN_SET;
+        COLOR_CODE currentColor;
 };
 
 #endif // MandelbrotWidget_HPP

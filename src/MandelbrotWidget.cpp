@@ -15,15 +15,18 @@ MandelbrotWidget::MandelbrotWidget(QWidget *parent)
 
     connect(this, SIGNAL(signalZoom()), this, SLOT(slotZoomEvent()));
     connect(this, SIGNAL(signalResize()), this, SLOT(slotResizeEvent()));
+    connect(this, SIGNAL(signalChangeColor()), this, SLOT(slotChangeColorEvent()));
 }
 uint MandelbrotWidget::maxIterations = DEFAULT_MAX_ITERATIONS;
 precisionFloat MandelbrotWidget::zoomMultiplier = DEFAULT_ZOOM_MULTIPLIER;
+dwellValue MandelbrotWidget::DWELL_VALUE_IN_SET = std::numeric_limits<dwellValue>::max();
 void MandelbrotWidget::initPointers(){
     image = NULL;
     dwellValues = NULL;
 }
 void MandelbrotWidget::init(){
     this->dwellValuesAreValid = false;
+    currentColor = COLOR_101;
 
     setViewParameters(DEFAULT_VIEW_WIDTH, DEFAULT_VIEW_HEIGHT);
     this->resize(viewParameters.width, viewParameters.height);
@@ -112,15 +115,40 @@ dwellValue MandelbrotWidget::calculateMandelPointDwellValue(MandelPoint point){
 }
 
 QColor MandelbrotWidget::calculateDwellValueColor(dwellValue value){
-    if(value >= DWELL_VALUE_IN_SET){return DEFAULT_QCOLOR_IN_SET;}
-    
+    if(value == DWELL_VALUE_IN_SET || value > maxIterations){return DEFAULT_QCOLOR_IN_SET;}
+    value = fmod(value, 256.0);
+    //return QColor(value, 0, value);
+    switch(currentColor){
+        case COLOR_001:
+            return QColor(0, 0, value);
+            break;
+        case COLOR_010:
+            return QColor(0, value, 0);
+            break;
+        case COLOR_011:
+            return QColor(0, value, value);
+            break;
+        case COLOR_100:
+            return QColor(value, 0, 0);
+            break;
+        case COLOR_101:
+            return QColor(value, 0, value);
+            break;
+        case COLOR_110:
+            return QColor(value, value, 0);
+            break;
+        case COLOR_111:
+            return QColor(value, value, value);
+            break;
+        default:
+            return QColor(value, 0, value);
+            break;
+    }
     /*
-    value = uint(value) % 256;
-    return QColor(value, 0, value);
+    value = fmod(value, 100.0);
+    float ratio = value / 100.0;
+    return mixColors(ratio, QColor(0, 0, 0), QColor(255, 0, 255));
     */
-    
-    precisionFloat ratio = value / (precisionFloat)maxIterations;
-    return mixColors(ratio, QColor(255, 0, 255), (255, 255, 255));
 }
 
 
@@ -137,11 +165,7 @@ void MandelbrotWidget::mapMandelLocationSegmentToDwellValues(MandelLocation mand
     for(int i=startLine; i<endLine; i++){
         for(int j=0; j<viewParameters.height; j++){
             MandelPoint mandelPoint = transformViewPointToMandelPoint(ViewPoint(i, j), viewParameters, mandelLocation);
-            
-            //smoothe or normal...?
             dwellValue value = calculateMandelPointDwellValue(mandelPoint);
-            //dwellValue value = calculateMandelPointIterationCount(mandelPoint);
-            
             dwellValues[i][j] = value;
         }
     }
@@ -177,14 +201,15 @@ void MandelbrotWidget::paintEvent(QPaintEvent *event){
 void MandelbrotWidget::paintImage(QImage *image){
     if(!dwellValuesAreValid){
         //threaded version
+        setWindowTitle(tr("Rendering..."));
         mapMandelLocationToDwellValues(mandelLocation, viewParameters, dwellValues);
         dwellValuesAreValid = true;
+        setWindowTitle(DEFAULT_WINDOW_TITLE);
     }
+    setWindowTitle(tr("Drawing..."));
     mapDwellValuesToQImage(dwellValues);
+    setWindowTitle(DEFAULT_WINDOW_TITLE);
     QPainter painter(this);
-
-    //TODO:?
-    //painter.drawImage(0, 0, viewParameters.width, viewParameters.height, *image);
     painter.drawImage(0, 0, *image);
 }
 
@@ -198,6 +223,16 @@ void MandelbrotWidget::resizeEvent(QResizeEvent *event){
 void MandelbrotWidget::mousePressEvent(QMouseEvent *event){
     this->latestQMouseEvent = event;
     emit signalZoom();
+}
+
+void MandelbrotWidget::keyPressEvent(QKeyEvent *event){
+    if(event->key() == Qt::Key_Left){
+        latestColorChangeEventIsForward = false;
+        emit signalChangeColor();
+    }else if(event->key() == Qt::Key_Right){
+        latestColorChangeEventIsForward = true;
+        emit signalChangeColor();
+    }
 }
 
 
@@ -222,8 +257,6 @@ void MandelbrotWidget::slotZoomEvent(){
         //recalculating mandelPixelDelta
         mandelLocation.pixelDelta *= zoomMultiplier;
     }
-
-
     dwellValuesAreValid = false;
     this->update();
 }
@@ -231,11 +264,25 @@ void MandelbrotWidget::slotZoomEvent(){
 
 void MandelbrotWidget::slotResizeEvent(){
     setViewParameters(this->frameSize().width(), this->frameSize().height());
+    dwellValuesAreValid = false;
     this->update();
 }
 
 
-
+void MandelbrotWidget::slotChangeColorEvent(){
+    if(latestColorChangeEventIsForward){
+        currentColor = (COLOR_CODE)((int)currentColor + 1);
+        if(currentColor == COLOR_END){
+            currentColor = (COLOR_CODE)((int)COLOR_START + 1);
+        }
+    }else{
+        currentColor = (COLOR_CODE)((int)currentColor - 1);
+        if(currentColor == COLOR_START){
+            currentColor = (COLOR_CODE)((int)COLOR_END - 1);
+        }
+    }
+    this->update();
+}
 
 
 

@@ -3,6 +3,8 @@
 
 #endif // TYPES_HPP
 
+#define DEFAULT_WINDOW_TITLE    (tr("MandelbrotViewerQt"))
+
 typedef long double precisionFloat;
 typedef float dwellValue;
 typedef unsigned int uint;
@@ -42,3 +44,8 @@ class ViewParameters{
         uint width, height;
         ViewPoint origin;
 };
+
+
+typedef enum{
+    COLOR_START = 0, COLOR_001, COLOR_010, COLOR_011, COLOR_100, COLOR_101, COLOR_110, COLOR_111, COLOR_END
+} COLOR_CODE;
