@@ -22,7 +22,7 @@ using std::vector;
 #define DEFAULT_MANDEL_ORIGIN_Y     (0.0)
 #define DEFAULT_MANDEL_PIXEL_DELTA  (0.0035)
 
-#define DEFAULT_MAX_ITERATIONS      (1000)
+#define DEFAULT_MAX_ITERATIONS      (5000)
 #define DEFAULT_ZOOM_MULTIPLIER     (2.0)
 
 #define DEFAULT_QCOLOR_IN_SET       (QColor(0, 0, 0))
