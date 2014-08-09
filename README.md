@@ -8,13 +8,13 @@
         
    
    
-![Screenshot](/demos/GUI_mandel.png?raw=true)
+![Screenshot](/demos/GUI.png?raw=true)
    
    
-![Screenshot](/demos/mini_mandel1.png?raw=true)
+![Screenshot](/demos/electric.png?raw=true)
    
    
-![Screenshot](/demos/spiral1.png?raw=true)
+![Screenshot](/demos/mini.png?raw=true)
 
 
-![Screenshot](/demos/mini_mandel2.png?raw=true)
+![Screenshot](/demos/spirals.png?raw=true)
